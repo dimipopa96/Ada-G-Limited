@@ -1,86 +1,73 @@
 const express = require('express');
-const fetch = require('node-fetch');
+const axios = require('axios');
 const cors = require('cors');
+const bodyParser = require('body-parser');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Enable CORS for all origins
+// Enable CORS
 app.use(cors());
 
-// Health check endpoint
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Tracking Proxy Server is running!', 
-    timestamp: new Date().toISOString(),
-    endpoints: ['/track']
-  });
+// Middleware to parse JSON bodies
+app.use(bodyParser.json());
+
+// Proxy for GET requests
+app.get('/proxy', async (req, res) => {
+    const targetUrl = req.query.url;
+    const apiKey = req.query.apiKey;
+    const queryParams = { ...req.query };
+
+    delete queryParams.url;
+    delete queryParams.apiKey;
+
+    try {
+        const response = await axios.get(targetUrl, {
+            headers: { 'Authorization': `Bearer ${apiKey}` },
+            params: queryParams
+        });
+        res.send(response.data);
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data' });
+    }
 });
 
-// Tracking endpoint
-app.get('/track', async (req, res) => {
-  try {
-    const { carrier_reference, postcode } = req.query;
-    
-    console.log('Tracking request:', { carrier_reference, postcode });
-    
-    // Validate required parameters
-    if (!carrier_reference) {
-      return res.status(400).json({ 
-        error: 'carrier_reference is required' 
-      });
+// Proxy for POST requests
+app.post('/proxy', async (req, res) => {
+    const targetUrl = req.body.url;
+    const apiKey = req.body.apiKey;
+    const bodyData = req.body.data;  // Extracting body data from the request
+
+    try {
+        const response = await axios.post(targetUrl, bodyData, {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+        res.send(response.data);
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data' });
     }
-    
-    if (!postcode) {
-      return res.status(400).json({ 
-        error: 'postcode is required' 
-      });
-    }
-    
-    // Get API key from environment variable
-    const API_KEY = process.env.API_KEY;
-    if (!API_KEY) {
-      return res.status(500).json({ 
-        error: 'API key not configured' 
-      });
-    }
-    
-    // Build the tracking API URL
-    const apiUrl = `https://adag.gsit.co.uk/_portal/api/_tracking/?key=${API_KEY}&carrier_reference=${encodeURIComponent(carrier_reference)}&postcode=${encodeURIComponent(postcode)}`;
-    
-    console.log('Calling tracking API...');
-    
-    // Make the request to the tracking API
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Tracking-Proxy/1.0'
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`API responded with status: ${response.status}`);
-    }
-    
-    const data = await response.text();
-    console.log('API response received');
-    
-    // Return the XML response
-    res.set('Content-Type', 'text/xml');
-    res.send(data);
-    
-  } catch (error) {
-    console.error('Proxy error:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch tracking data',
-      details: error.message 
-    });
-  }
 });
 
-// Start the server
+// Proxy for POST requests
+app.post('/proxyListaFirme', async (req, res) => {
+    const targetUrl = req.body.url;
+    const apiKey = req.body.apiKey;
+    const bodyData = req.body.data;  // Extracting body data from the request
+
+    console.log(targetUrl)
+    console.log(apiKey)
+    console.log(bodyData)
+
+    try {
+        const response = await axios.post(targetUrl, bodyData, {
+            params: { key: apiKey, data: JSON.stringify(bodyData) }
+        });
+        res.send(response.data);
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data' });
+    }
+});
+
 app.listen(PORT, () => {
-  console.log(`Proxy server running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/`);
-  console.log(`Tracking endpoint: http://localhost:${PORT}/track`);
+    console.log(`CORS Proxy Server running on port ${PORT}`);
 });
