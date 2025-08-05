@@ -1,18 +1,17 @@
 {
-  "name": "tracking-proxy",
+  "name": "cors-proxy-nodejs",
   "version": "1.0.0",
-  "description": "Proxy server for tracking API with static IP",
-  "main": "server.js",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node server.js"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
+    "axios": "^1.7.7",
     "cors": "^2.8.5",
-    "node-fetch": "^2.7.0"
-  },
-  "engines": {
-    "node": ">=16"
+    "express": "^4.21.1"
   }
 }
